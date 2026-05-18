@@ -2,16 +2,12 @@
 ===========================================================
   TALLER AUTÓNOMO: EL ARTE DE LAS FUNCIONES EN PYTHON
 ===========================================================
-  Autor   : [Tu Nombre]
+  Autor   : david lopez martinez
   Materia : Fundamentos de Programación
   Fecha   : Mayo 2025
   Fuente  : https://ellibrodepython.com/funciones-python
 
-  Propósito:
-      Demostrar los conceptos fundamentales de las funciones
-      en Python mediante ejemplos funcionales y comentarios
-      explicativos, cubriendo definición, parámetros, retorno,
-      valores por defecto, scope y argumentos variables.
+  
 ===========================================================
 """
 
