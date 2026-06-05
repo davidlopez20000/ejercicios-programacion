@@ -1,0 +1,219 @@
+
+#
+# DESCRIPCIÓN GENERAL DEL PROGRAMA:
+# ──────────────────────────────────
+# Este programa es un simulador interactivo que permite a los estudiantes
+# trabajar con lógica booleana de forma práctica y visual.
+#
+# El usuario puede ingresar expresiones lógicas (como "a + b'" o "a * b * c")
+# y el programa automáticamente:
+# 1. Detecta las variables presentes (a, b, c)
+# 2. Genera todas las combinaciones binarias posibles
+# 3. Evalúa la expresión para cada combinación
+# 4. Muestra los resultados en una tabla de verdad formateada
+#
+# CARACTERÍSTICAS PRINCIPALES:
+# ───────────────────────────
+# • Soporte para operadores: + (OR), * (AND), ' (NOT)
+# • Tabla de verdad adaptativa según el número de variables
+# • Interfaz amigable con menú interactivo
+# • Validación de sintaxis y manejo de errores
+# • Mensajes claros al usuario en caso de errores
+#
+# EJEMPLO DE USO:
+# ──────────────
+# Expresión: a + b'
+# Resultado: Tabla con 2 variables (a, b) mostrando OR de a con NOT b
+#
+# Expresión: a * b * c
+# Resultado: Tabla con 3 variables (a, b, c) mostrando AND entre las tres
+
+import os
+import itertools
+import time
+
+# =====================================================================
+# FUNCIONES AUXILIARES DE INTERFAZ
+# =====================================================================
+
+def limpiar_pantalla():
+    # Limpia la pantalla según el sistema operativo (Windows, Linux o Mac)
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def mostrar_bienvenida():
+    # Imprime el banner de bienvenida con el título del programa
+    print("=" * 65)
+    print("  ¡SIMULADOR LÓGICO DE INTERFAZ ADAPTATIVA v2.0!  ")
+    print("   Detecta tus variables (a, b, c) y aplica NOT (a', b', c')")
+    print("=" * 65)
+    input("\nPresiona ENTER para comenzar...")
+
+def mostrar_guia():
+    # Muestra la guía de sintaxis y operadores válidos
+    limpiar_pantalla()
+    print("=" * 65)
+    print("                 MANUAL DE SINTAXIS ADMITIDA")
+    print("=" * 65)
+    print("El sistema reconoce automáticamente las variables presentes.")
+    print("\nOperadores válidos:")
+    print("  • SUMA (OR):       +")
+    print("  • PRODUCTO (AND):  * (o variables juntas como 'ab')")
+    print("  • NEGACIÓN (NOT):  Usa una comilla simple (') después de la letra.")
+    print("                     Ejemplo: a' significa (NOT a)")
+    print("\nEjemplos que puedes probar:")
+    print("  -> a + b'          (Evalúa 2 variables, B está negada)")
+    print("  -> a * b * c       (Evalúa 3 variables en una compuerta AND)")
+    print("  -> a' + b + c'     (Evalúa 3 variables, A y C negadas)")
+    print("=" * 65)
+    input("\nPresiona ENTER para volver al menú...")
+
+def obtener_variables_presentes(expresion):
+    # Detecta qué variables (a, b, c) están presentes en la expresión
+    variables = []
+    for var in ['a', 'b', 'c']:
+        # Busca cada variable en la expresión (convertida a minúsculas)
+        if var in expresion.lower():
+            variables.append(var)
+    return variables
+
+def evaluar_logica(valores_var, expresion):
+    # Normaliza la expresión a minúsculas y elimina espacios
+    expr_eval = expresion.lower().replace(" ", "")
+    
+    # Reemplaza variables negadas: a' -> (not 1)
+    # .items() desempaqueta el diccionario en pares (clave, valor)
+    for var, val in valores_var.items():
+        # f-string permite insertar variables dentro de strings entre {}
+        expr_eval = expr_eval.replace(f"{var}'", f"(not {val})")
+    
+    # Reemplaza variables normales: a -> 1, b -> 0
+    # str() convierte el número a texto para poder hacer el replace
+    for var, val in valores_var.items():
+        expr_eval = expr_eval.replace(var, str(val))
+    
+    # Convierte operadores: + a or, * a and
+    expr_eval = expr_eval.replace("+", " or ")
+    expr_eval = expr_eval.replace("*", " and ")
+    
+    # Agrega 'and' entre valores contiguos para que Python entienda
+    expr_eval = expr_eval.replace(") (", ") and (")
+    # Bucles anidados: recorre todas las combinaciones posibles de caracteres
+    for var1 in ['0', '1', ')']:
+        for var2 in ['0', '1', '(']:
+            expr_eval = expr_eval.replace(f"{var1}{var2}", f"{var1} and {var2}")
+            expr_eval = expr_eval.replace(f"{var1}not", f"{var1} and not")
+
+    try:
+        # eval() ejecuta el string como si fuera código Python (riesgoso pero necesario aquí)
+        resultado = eval(expr_eval)
+        # Retorna 1 si es verdadero, 0 si es falso (ternario con if)
+        return 1 if resultado else 0
+    except:
+        # Retorna None si hay error de sintaxis
+        return None
+
+def procesar_ejercicio(expresion):
+    # Detecta qué variables están presentes en la expresión
+    vars_presentes = obtener_variables_presentes(expresion)
+    
+    # Si no hay variables, muestra error y retorna
+    if not vars_presentes:
+        print("\n❌ Error: No se detectaron variables válidas (a, b o c).")
+        input("\nPresiona ENTER para continuar...")
+        return
+
+    # Prepara la pantalla y muestra la expresión a analizar
+    limpiar_pantalla()
+    print("=" * 65)
+    print(f" ANALIZANDO EXPRESIÓN: {expresion}")
+    print("=" * 65)
+    time.sleep(1)
+    
+    # Crea el encabezado de la tabla con los nombres de variables en mayúscula
+    # .join() une elementos de una lista; [v.upper() for v in...] es una list comprehension que convierte a mayúscula
+    encabezado = "│ " + " │ ".join([v.upper() for v in vars_presentes]) + " │ RESUL │"
+    
+    # Construye las líneas decorativas según el número de variables
+    # len() obtiene cantidad; * (multiplicación de string) repite el patrón según esa cantidad
+    linea_sup = "┌" + "───┬" * len(vars_presentes) + "───────┐"
+    linea_mid = "├" + "───┼" * len(vars_presentes) + "───────┤"
+    linea_inf = "└" + "───┴" * len(vars_presentes) + "───────┘"
+    
+    # Imprime la parte superior de la tabla
+    print(linea_sup)
+    print(encabezado)
+    print(linea_mid)
+    
+    # Genera todas las combinaciones binarias (2^n combinaciones)
+    # itertools.product() hace producto cartesiano; repeat=len() define cuántas variables hay
+    combinaciones = list(itertools.product([1, 0], repeat=len(vars_presentes)))
+    # reverse() invierte el orden de la lista (de mayor a menor)
+    combinaciones.reverse()
+    
+    # Itera sobre cada combinación y evalúa la expresión
+    for combinacion in combinaciones:
+        # zip() empareja elementos; dict() convierte esos pares en diccionario {'a': 1, 'b': 0}
+        valores_var = dict(zip(vars_presentes, combinacion))
+        
+        # Evalúa la expresión con esos valores
+        resultado = evaluar_logica(valores_var, expresion)
+        
+        # Si hay error, lo muestra y detiene
+        if resultado is None:
+            print(f"❌ Error: Expresión inválida. Verifica la sintaxis.")
+            break
+        
+        # Construye e imprime la fila de la tabla de verdad
+        # .join() une valores con separadores; [str(v) for...] convierte números a texto en una list comprehension
+        fila = "│ " + " │ ".join([str(v) for v in combinacion]) + f" │   {resultado}   │"
+        print(fila)
+    
+    # Cierra la tabla
+    print(linea_inf)
+    print("=" * 65)
+    input("\nPresiona ENTER para volver al menú principal...")
+
+def proyecto():
+    # Muestra la pantalla de bienvenida al iniciar
+    mostrar_bienvenida()
+    
+    # Bucle principal del menú
+    while True:
+        limpiar_pantalla()
+        print("┌──────────────────────────────────────────────────────────┐")
+        print("│               SIMULADOR LÓGICO DE TERMINAL               │")
+        print("├──────────────────────────────────────────────────────────┤")
+        print("│ 1. Ingresar nueva expresión (Ej: a + b' + c)             │")
+        print("│ 2. Ver guía de sintaxis y operadores                     │")
+        print("│ 3. Salir                                                 │")
+        print("└──────────────────────────────────────────────────────────┘")
+        
+        # Solicita opción al usuario
+        opcion = input("Selecciona una opción: ")
+        
+        if opcion == "1":
+            # Opción 1: Ingresa y procesa una expresión
+            limpiar_pantalla()
+            expresion = input("Introduce tu expresión canónica: ")
+            procesar_ejercicio(expresion)
+        
+        elif opcion == "2":
+            # Opción 2: Muestra la guía de sintaxis
+            mostrar_guia()
+        
+        elif opcion == "3":
+            # Opción 3: Sale del programa
+            limpiar_pantalla()
+            print("\n¡Éxito en tus proyectos de programación! Código finalizado. 🚀\n")
+            break
+        
+        else:
+            # Opción inválida
+            print("\n❌ Opción inválida.")
+            input("Presiona ENTER para continuar...")
+            time.sleep(1)
+
+# Punto de entrada del programa
+if __name__ == "__main__":
+    # Inicia la ejecución llamando a la función principal
+    proyecto()
